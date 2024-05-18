@@ -1,37 +1,50 @@
-import Button from '@/components/Button';
-import { defaultPizzaImage } from '@/components/ProductListItem';
-import Colors from '@/constants/Colors';
-import { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, Image, TouchableWithoutFeedback, Keyboard } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
-import { Stack } from 'expo-router';
+import Button from "@/components/Button";
+import { defaultPizzaImage } from "@/components/ProductListItem";
+import Colors from "@/constants/Colors";
+import { useState } from "react";
+import { View, Text, StyleSheet, TextInput, Image, Alert } from "react-native";
+import * as ImagePicker from "expo-image-picker";
+import { Stack, useLocalSearchParams } from "expo-router";
+import { Keyboard, TouchableWithoutFeedback } from "react-native";
 
 const CreateProductScreen = () => {
-  const [name, setName] = useState('');
-  const [price, setPrice] = useState('');
-  const [errors, setErrors] = useState('');
+  const [name, setName] = useState("");
+  const [price, setPrice] = useState("");
+  const [errors, setErrors] = useState("");
   const [image, setImage] = useState<string | null>(null);
 
+  const { id } = useLocalSearchParams();
+  const isUpdating = !!id;
+
   const resetFields = () => {
-    setName('');
-    setPrice('');
+    setName("");
+    setPrice("");
   };
 
   const validateInput = () => {
-    setErrors('');
+    setErrors("");
     if (!name) {
-      setErrors('Name is required');
+      setErrors("Name is required");
       return false;
     }
     if (!price) {
-      setErrors('Price is required');
+      setErrors("Price is required");
       return false;
     }
     if (isNaN(parseFloat(price))) {
-      setErrors('Price is not a number');
+      setErrors("Price is not a number");
       return false;
     }
     return true;
+  };
+
+  const onSubmit = () => {
+    if (isUpdating) {
+      // update
+      onUpdateCreate();
+    } else {
+      onCreate();
+    }
   };
 
   const onCreate = () => {
@@ -39,7 +52,19 @@ const CreateProductScreen = () => {
       return;
     }
 
-    console.warn('Creating product: ', name);
+    console.warn("Creating product: ", name);
+
+    // Save in the database
+
+    resetFields();
+  };
+
+  const onUpdateCreate = () => {
+    if (!validateInput()) {
+      return;
+    }
+
+    console.warn("Updating product: ");
 
     // Save in the database
 
@@ -59,11 +84,29 @@ const CreateProductScreen = () => {
       setImage(result.assets[0].uri);
     }
   };
+  const onDelete = () => {
+    console.warn("DELETE!!!!!!!");
+  };
+
+  const confirmDelete = () => {
+    Alert.alert("Confirm", "Are you sure you want to delete this product", [
+      {
+        text: "Cancel",
+      },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: onDelete,
+      },
+    ]);
+  };
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={styles.container}>
-        <Stack.Screen options={{ title: 'Create Product' }} />
+        <Stack.Screen
+          options={{ title: isUpdating ? "Update Product" : "Create Product" }}
+        />
 
         <Image
           source={{ uri: image || defaultPizzaImage }}
@@ -90,8 +133,13 @@ const CreateProductScreen = () => {
           keyboardType="numeric"
         />
 
-        <Text style={{ color: 'red' }}>{errors}</Text>
-        <Button onPress={onCreate} text="Create" />
+        <Text style={{ color: "red" }}>{errors}</Text>
+        <Button onPress={onSubmit} text={isUpdating ? "Update" : "Create"} />
+        {isUpdating && (
+          <Text onPress={confirmDelete} style={styles.textButton}>
+            Delete
+          </Text>
+        )}
       </View>
     </TouchableWithoutFeedback>
   );
@@ -100,29 +148,30 @@ const CreateProductScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
     padding: 10,
   },
   image: {
-    width: '50%',
+    width: "50%",
     aspectRatio: 1,
-    alignSelf: 'center',
+    alignSelf: "center",
   },
   textButton: {
-    alignSelf: 'center',
-    fontWeight: 'bold',
+    alignSelf: "center",
+    fontWeight: "bold",
     color: Colors.light.tint,
     marginVertical: 10,
   },
+
   input: {
-    backgroundColor: 'white',
+    backgroundColor: "white",
     padding: 10,
     borderRadius: 5,
     marginTop: 5,
     marginBottom: 20,
   },
   label: {
-    color: 'gray',
+    color: "gray",
     fontSize: 16,
   },
 });
